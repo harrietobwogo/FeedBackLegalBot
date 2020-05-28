@@ -10,43 +10,43 @@
         "County": "Nairobi",
         "SubCounty": "WestLands",
         "Ward": "Umoja I"
-    }
+    },
     {
         "name": "Harriet",
         "County": "Nairobi",
         "SubCounty": "Dagoretti North",
         "Ward": "Umoja II"
-    }
+    },
     {
         "name": "h",
         "County": "Nairobi",
         "SubCounty": "Dagoretti North",
         "Ward": "Mowlem"
-    }
+    },
     {
         "name": "Harriet",
         "County": "Nairobi",
         "SubCounty": "WestLands",
         "Ward": "Umoja I"
-    }
+    },
     {
         "name": "har",
         "County": "KIAMBU",
         "SubCounty": "GATUNDU SOUTH",
         "Ward": "KIAMWANGI"
-    }
+    },
     {
         "name": "gf",
         "County": "KIAMBU",
         "SubCounty": "GATUNDU SOUTH",
         "Ward": "KIAMWANGI"
-    }
+    },
     {
         "name": "Harriet",
         "County": "KIAMBU",
         "SubCounty": "GATUNDU SOUTH",
         "Ward": "KIAMWANGI"
-    }
+    },
     {
         "name": "Harriet",
         "County": "KIAMBU",
@@ -54,18 +54,3 @@
         "Ward": "KIAMWANGI"
     }
 ]
-{
-  "name": "f",
-  "County": "KIAMBU",
-  "SubCounty": "GATUNDU SOUTH",
-  "Ward": "KIAMWANGI",
-  "UserName": "hl",
-  "Password": "3456th"
-}{
-  "name": "hj",
-  "County": "KIAMBU",
-  "SubCounty": "THIKA TOWN",
-  "Ward": "GATUANYAGA",
-  "UserName": "ikl",
-  "Password": "678ujk"
-}

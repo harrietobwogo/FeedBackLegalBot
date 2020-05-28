@@ -38,7 +38,7 @@ namespace FeedBackLegalBot.Dialogs
         private async Task<DialogTurnResult> InitialStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             UserProfile userProfile = await _botStateService.UserProfileAccessor.GetAsync(stepContext.Context, () => new UserProfile());
-            if (string.IsNullOrEmpty(userProfile.name))
+            if (string.IsNullOrEmpty(userProfile.Name))
             {
                 return await stepContext.PromptAsync($"{nameof(WelcomeDialog)}.name",
                 new PromptOptions
@@ -56,14 +56,14 @@ namespace FeedBackLegalBot.Dialogs
         private async Task<DialogTurnResult> FinalStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             UserProfile userProfile = await _botStateService.UserProfileAccessor.GetAsync(stepContext.Context, () => new UserProfile());
-            if (string.IsNullOrEmpty(userProfile.name))
+            if (string.IsNullOrEmpty(userProfile.Name))
             { //set the name 
-                userProfile.name = (string)stepContext.Result;
+                userProfile.Name = (string)stepContext.Result;
                 //save any state changes tat might have occured during the turn
                 await _botStateService.UserProfileAccessor.SetAsync(stepContext.Context, userProfile);
             }
 
-            await stepContext.Context.SendActivityAsync(MessageFactory.Text(String.Format("Hi {0}. My name is Lily and I'm the virtual assistant for Microsoft's legal services.welcome to our service. Type next to continue.", userProfile.name)), cancellationToken);
+            await stepContext.Context.SendActivityAsync(MessageFactory.Text(String.Format("Hi {0}. My name is Lily and I'm the virtual assistant for Microsoft's legal services.welcome to our service. Type next to continue.", userProfile.Name)), cancellationToken);
             return await stepContext.EndDialogAsync(null, cancellationToken);
 
         }

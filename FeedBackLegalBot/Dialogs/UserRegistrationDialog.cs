@@ -1,8 +1,10 @@
 ﻿using FeedBackLegalBot.Models;
+using FeedBackLegalBot.Models.Interfaces;
 using FeedBackLegalBot.Services;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Choices;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -17,10 +19,17 @@ namespace FeedBackLegalBot.Dialogs
     public class UserRegistrationDialog : ComponentDialog
     {
         private readonly BotStateService _botStateService;
+        private readonly IConfiguration _configuration;
+        private readonly IFileUtility _fileUtility;
 
-        public UserRegistrationDialog(string dialogId, BotStateService botStateService) : base(dialogId)
+        public UserRegistrationDialog(string dialogId,
+                                      BotStateService botStateService,
+                                      IConfiguration configuration,
+                                      IFileUtility fileUtility) : base(dialogId)
         {
             _botStateService = botStateService ?? throw new ArgumentNullException(nameof(botStateService));
+            _configuration = configuration;
+            _fileUtility = fileUtility;
 
             InitializeWaterfallDialog();
         }
@@ -28,7 +37,7 @@ namespace FeedBackLegalBot.Dialogs
         private void InitializeWaterfallDialog()
         {
             var waterfallSteps = new WaterfallStep[]
-            { 
+            {
                 //Create Waterfall steps
                 LanguageStepAsync,
                 AccessStepAsync,
@@ -119,7 +128,7 @@ namespace FeedBackLegalBot.Dialogs
         {
             //Get location information
             var counties = GetLocations("county");
-            //Filter for administrative location 
+            //Filter for administrative location
             //We'll need present list to user
             stepContext.Values["Name"] = (string)stepContext.Result;
             if (stepContext.Values["Language"] == "KISWAHILI")
@@ -148,7 +157,7 @@ namespace FeedBackLegalBot.Dialogs
             stepContext.Values["county"] = result;
 
             var subCounties = GetLocations("constituency", "county", result);
-          
+
             if (stepContext.Values["Language"] == "KISWAHILI")
             {
 
@@ -243,6 +252,11 @@ namespace FeedBackLegalBot.Dialogs
 
         private async Task<DialogTurnResult> MainMenuStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
+            var userProfilesFilePath = _configuration["UsersFilePathSource"];
+            // Fetch list of all user profile
+            string userProfileJson = await _fileUtility.ReadFromFile(userProfilesFilePath);
+            List<UserProfile> userProfiles = JsonConvert.DeserializeObject<List<UserProfile>>(userProfileJson);
+
             stepContext.Values["password"] = (string)stepContext.Result;
             if (stepContext.Values["Language"] == "KISWAHILI")
             {
@@ -250,7 +264,7 @@ namespace FeedBackLegalBot.Dialogs
                 var userProfile = await _botStateService.UserProfileAccessor.GetAsync(stepContext.Context, () => new UserProfile(), cancellationToken);
                 //var Location = await _botStateService.LocationAccessor.GetAsync(stepContext.Context, () => new Location(), cancellationToken);
                 //save all of the data inside the user profile
-                userProfile.name = (string)stepContext.Values["Name"];
+                userProfile.Name = (string)stepContext.Values["Name"];
                 userProfile.County = (string)stepContext.Values["county"];
                 userProfile.SubCounty = (string)stepContext.Values["subCounty"];
                 userProfile.Ward = (string)stepContext.Values["ward"];
@@ -259,7 +273,7 @@ namespace FeedBackLegalBot.Dialogs
 
                 //show Summary to the user
                 await stepContext.Context.SendActivityAsync(MessageFactory.Text($" Huu Hapa muhtasari wa Profaili yako: "), cancellationToken);
-                await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format("Jina:{0}", userProfile.name)), cancellationToken);
+                await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format("Jina:{0}", userProfile.Name)), cancellationToken);
                 await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format("Kaunti:{0}", userProfile.County)), cancellationToken);
                 await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format("Kaunti ndogo:{0}", userProfile.SubCounty)), cancellationToken);
                 await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format("Wadi:{0}", userProfile.Ward)), cancellationToken);
@@ -267,22 +281,15 @@ namespace FeedBackLegalBot.Dialogs
 
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format("Details:{0}", GetUserDetails())), cancellationToken);
 
-                await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format(" Hongera {0}!Umesajiliwa kutumia huduma yetu.Tafadhali chagua(1.MAIN MENU) kuendelea kutumia huduma", userProfile.name)), cancellationToken);
-                //save data in userstate
+                await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format(" Hongera {0}!Umesajiliwa kutumia huduma yetu.Tafadhali chagua(1.MAIN MENU) kuendelea kutumia huduma", userProfile.Name)), cancellationToken);
+
+                // Save data in userstate
                 await _botStateService.UserProfileAccessor.SetAsync(stepContext.Context, userProfile);
-                //Write user details to a json file
-                var userDetails = JsonConvert.SerializeObject(userProfile, Formatting.Indented);
-                var filePath = @"C:\Users\Tech Jargon\source\repos\FeedBackLegalBot\FeedBackLegalBot\Data\UserDetails.json";
-                if (!File.Exists(filePath))
-                {
-                    File.WriteAllText(filePath, userDetails);
-                }
-                else
-                {
-                    File.AppendAllText(filePath, userDetails);
-                }
+                userProfiles.Add(userProfile);
 
-
+                // Save user profiles
+                var userProfilesString = JsonConvert.SerializeObject(userProfiles, Formatting.Indented);
+                await _fileUtility.WriteToFile(userProfilesString, userProfilesFilePath);
 
                 //display main menu
                 return await stepContext.PromptAsync($"{nameof(UserRegistrationDialog)}.mainMenu",
@@ -296,14 +303,14 @@ namespace FeedBackLegalBot.Dialogs
                 //waterfallStep always finishes with the end of the waterfall or with another dialog here it is the end
                 return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
             }
-           
+
             else
             {
                 //Get the current profile object from user state
                 var userProfile = await _botStateService.UserProfileAccessor.GetAsync(stepContext.Context, () => new UserProfile(), cancellationToken);
                 //var Location = await _botStateService.LocationAccessor.GetAsync(stepContext.Context, () => new Location(), cancellationToken);
                 //save all of the data inside the user profile
-                userProfile.name = (string)stepContext.Values["Name"];
+                userProfile.Name = (string)stepContext.Values["Name"];
                 userProfile.County = (string)stepContext.Values["county"];
                 userProfile.SubCounty = (string)stepContext.Values["subCounty"];
                 userProfile.Ward = (string)stepContext.Values["ward"];
@@ -312,7 +319,7 @@ namespace FeedBackLegalBot.Dialogs
 
                 //show Summary to the user
                 await stepContext.Context.SendActivityAsync(MessageFactory.Text($"Here is a summary of your Profile:"), cancellationToken);
-                await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format("Name:{0}", userProfile.name)), cancellationToken);
+                await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format("Name:{0}", userProfile.Name)), cancellationToken);
                 await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format("County:{0}", userProfile.County)), cancellationToken);
                 await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format("SubCounty:{0}", userProfile.SubCounty)), cancellationToken);
                 await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format("Ward:{0}", userProfile.Ward)), cancellationToken);
@@ -320,7 +327,7 @@ namespace FeedBackLegalBot.Dialogs
 
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format("Details:{0}", GetUserDetails())), cancellationToken);
 
-                await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format("Congratulations {0}! You are now registered to use our service. Please choose (1.MAIN MENU ) to continue using the service.", userProfile.name)), cancellationToken);
+                await stepContext.Context.SendActivityAsync(MessageFactory.Text(string.Format("Congratulations {0}! You are now registered to use our service. Please choose (1.MAIN MENU ) to continue using the service.", userProfile.Name)), cancellationToken);
 
 
                 //save data in userstate
@@ -334,7 +341,7 @@ namespace FeedBackLegalBot.Dialogs
                 }
                 else
                 {
-                    File.AppendAllText(filePath, userDetails); 
+                    File.AppendAllText(filePath, userDetails);
                 }
 
 
@@ -357,7 +364,7 @@ namespace FeedBackLegalBot.Dialogs
         {
             var filePath = @"C:\Users\Tech Jargon\source\repos\FeedBackLegalBot\FeedBackLegalBot\Data\UserDetails.json";
             var profile = JsonConvert.DeserializeObject<UserProfile>(File.ReadAllText(filePath));
-            return profile.ToString(); 
+            return profile.ToString();
         }
         private List<string> GetLocations(string administrativeKey, string filterKey = null, string filterValue = null)
         {
@@ -385,5 +392,5 @@ namespace FeedBackLegalBot.Dialogs
 
     }
 }
-    
-    
+
+

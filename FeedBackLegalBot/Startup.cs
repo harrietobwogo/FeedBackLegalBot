@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using FeedBackLegalBot.Bots;
 using FeedBackLegalBot.Services;
 using FeedBackLegalBot.Dialogs;
+using FeedBackLegalBot.Models.Interfaces;
 
 namespace FeedBackLegalBot
 {
@@ -38,6 +39,7 @@ namespace FeedBackLegalBot
 
             // Create the bot as a transient. In this case the ASP Controller is expecting an IBot.
             services.AddTransient<IBot, DialogBot<MainDialog>>();
+            services.AddSingleton<IFileUtility, DiskFileUtility>();
             //services.AddTransient<IBot, EchoBot>();
             //services.AddTransient<IBot, DialogBot<FeedBackSurveyDialog>>();
         }

@@ -42,17 +42,17 @@ namespace FeedBackLegalBot.Bots
             ConversationData conversationData = await _botStateService.ConversationDataAccessor
                                         .GetAsync(turnContext, () => new ConversationData());
 
-            if (!string.IsNullOrEmpty(userProfile.name))
+            if (!string.IsNullOrEmpty(userProfile.Name))
             {
-                await turnContext.SendActivityAsync(MessageFactory.Text($"Hey {userProfile.name}. I'm Microsoft's Legal Bot and I provide pro-bono legal information and services to Kenyans."), cancellationToken);
+                await turnContext.SendActivityAsync(MessageFactory.Text($"Hey {userProfile.Name}. I'm Microsoft's Legal Bot and I provide pro-bono legal information and services to Kenyans."), cancellationToken);
             }
             else
             {
                 if (conversationData.PromptedUserForName)
                 {//set the name to what the user provided
-                    userProfile.name = turnContext.Activity.Text?.Trim();
+                    userProfile.Name = turnContext.Activity.Text?.Trim();
                     //acknowledge that we got their name.
-                    await turnContext.SendActivityAsync(MessageFactory.Text($"Thanks {userProfile.name}. How can I help you today?"));
+                    await turnContext.SendActivityAsync(MessageFactory.Text($"Thanks {userProfile.Name}. How can I help you today?"));
                    //reset the flag to allow the bot to go through the cycle again
                     conversationData.PromptedUserForName = false;
                 }
